@@ -10,11 +10,11 @@ interface fetchDrinksParams {
 const fetchDrinks = async (params: fetchDrinksParams = {}) => {
   const { category, page = 1, limit = 10, search } = params;
 
-  const url = new URL('https://drinksapi.onrender.com/drinks')
+  const url = new URL('http://localhost:3333/drinks')
 
   if (category) {
     url.searchParams.set('category', category);
-  }  
+  }
   if (page) {
     url.searchParams.set('page', String(page));
   }
@@ -29,7 +29,7 @@ const fetchDrinks = async (params: fetchDrinksParams = {}) => {
   if (!response.ok) {
     throw new Error(`Erro ao buscar os drinks`);
   }
-  
+
   const data = await response.json();
   return data.data;
 }

@@ -30,18 +30,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([])
 
   const addToCart = useCallback((item: CartItem) => {
-      setCart(prevCart => {
-        const isExistItem = prevCart.findIndex(cartItem => cartItem.id === item.id)
-  
-        if (isExistItem !== -1) {
-          const updatedCart = [...prevCart]
-          updatedCart[isExistItem].quantity += 1
-          return updatedCart
-        } else {
-          return [...prevCart, { ...item, quantity: 1 }]
-        }
-      })
-  }, [ setCart ])
+    setCart(prevCart => {
+      const isExistItem = prevCart.findIndex(cartItem => cartItem.id === item.id)
+
+      if (isExistItem !== -1) {
+        const updatedCart = [...prevCart]
+        updatedCart[isExistItem].quantity += 1
+        return updatedCart
+      } else {
+        return [...prevCart, { ...item, quantity: 1 }]
+      }
+    })
+  }, [setCart])
 
   const removeToCart = (item: CartItem) => {
     setCart(prevCart => {

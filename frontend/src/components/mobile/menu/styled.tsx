@@ -118,7 +118,7 @@ export const Orders = styled(motion.div)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   width: "20%",
-  height: "50%",
+  height: "fit-content",
   padding: "0.5rem",
   backgroundColor: theme.colors.background,
   color: theme.colors.text,

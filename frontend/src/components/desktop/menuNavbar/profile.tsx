@@ -1,30 +1,39 @@
 import { MenuProps, Space } from 'antd';
-import CartIcon from '../../../assets/icons/cart';
+import { useTheme } from 'styled-components';
+import Moon from '../../../assets/icons/Moon';
+import Sun from '../../../assets/icons/Sun';
 import UserIcon from '../../../assets/icons/user';
 
 import * as Styled from './styled';
 
-const items: MenuProps['items'] = [
-  {
-    key: '1',
-    label: 'My Account',
-    disabled: true,
-  },
-  {
-    type: 'divider',
-  },
-  {
-    key: '2',
-    label: 'Profile',
-    extra: '⌘P',
-  },
-];
+interface ProfileProps {
+  toggleTheme: () => void;
+}
 
-const Profile = () => {
+const Profile = ({ toggleTheme }: ProfileProps) => {
+  const theme = useTheme();
+  const isDarkMode = theme.title === 'dark';
+
+  const items: MenuProps['items'] = [
+    {
+      key: '1',
+      label: 'Minha Conta',
+      disabled: true,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: '2',
+      label: isDarkMode ? 'Modo Claro' : 'Modo Escuro',
+      onClick: toggleTheme,
+    },
+  ];
+
   return (
     <Styled.ProfileContainer>
-      <button>
-        <CartIcon />
+      <button onClick={toggleTheme} title={isDarkMode ? 'Modo Claro' : 'Modo Escuro'}>
+        {isDarkMode ? <Sun width={24} height={24} /> : <Moon width={24} height={24} />}
       </button>
       <Styled.MenuDropdown menu={{ items }}>
         <a onClick={(e) => e.preventDefault()}>

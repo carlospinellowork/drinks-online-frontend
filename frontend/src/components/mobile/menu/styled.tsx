@@ -1,5 +1,5 @@
-import styled from "styled-components";
 import { motion } from "framer-motion";
+import styled from "styled-components";
 
 export const Container = styled("div")(() => ({
   display: "flex",
@@ -21,95 +21,130 @@ export const Title = styled("h1")(({ theme }) => ({
 export const List = styled("div")(() => ({
   display: "flex",
   flexDirection: "column",
-  gap: "3rem",
+  gap: "1rem",
 }))
 
 
 export const Item = styled("div")(({ theme }) => ({
   display: "flex",
-  paddingTop: "1rem",
   alignItems: "center",
+  justifyContent: "space-between",
+  padding: "1rem",
+  gap: "1rem",
+  backgroundColor: theme.title === 'light' ? '#fff' : 'rgba(255, 255, 255, 0.05)',
+  borderRadius: "16px",
+  boxShadow: theme.title === 'light'
+    ? "0 4px 12px rgba(0, 0, 0, 0.05)"
+    : "0 4px 12px rgba(0, 0, 0, 0.2)",
+  border: `1px solid ${theme.title === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
 
-  "span.quantity": {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "2px",
-    color: theme.colors.primary,
-    fontSize: "14px",
-    fontWeight: "600",
-  },
-
-  "> div": {
+  "> div:first-of-type": {
     display: "flex",
     flexDirection: "column",
-    justifyContent: "center",
     flex: "1",
-    gap: "1.5rem",
-    cursor: "pointer",
+    gap: "0.5rem",
+    overflow: "hidden",
 
     "> h1": {
       color: theme.colors.text,
-      fontSize: "1.5rem",
-      textTransform: "capitalize",
-      fontWeight: "600",
-      lineHeight: "1.5rem",
+      fontSize: "1rem",
+      fontWeight: "700",
+      margin: 0,
+      lineHeight: "1.2",
+      display: "-webkit-box",
+      WebkitLineClamp: 2,
+      WebkitBoxOrient: "vertical",
+      overflow: "hidden",
     },
 
     "> span": {
-      color: theme.title === 'light' ? theme.colors.textDescription : theme.colors.text,
-      fontSize: "16px",
-      fontWeight: "600",
-      lineHeight: "1rem",
+      color: theme.colors.textDescription,
+      fontSize: "0.8rem",
+      lineHeight: "1.3",
+      display: "-webkit-box",
+      WebkitLineClamp: 2,
+      WebkitBoxOrient: "vertical",
+      overflow: "hidden",
     },
 
-    "> div": {
+    ".actions": {
       display: "flex",
       alignItems: "center",
-      gap: "1rem",
+      justifyContent: "space-between",
+      marginTop: "0.5rem",
+      paddingRight: "0.5rem",
 
-      "> p": {
-        color: theme.colors.text,
-        fontSize: "18px",
-        fontWeight: "600",
-        lineHeight: "1rem",
+      ".price": {
+        color: theme.colors.primary,
+        fontSize: "1rem",
+        fontWeight: "700",
+        margin: 0,
       },
 
-      "> button": {
+      ".add-btn": {
+        backgroundColor: theme.colors.primary,
+        color: "#fff",
+        border: "none",
+        fontSize: "0.8rem",
+        fontWeight: "600",
+        padding: "0.5rem 1rem",
+        borderRadius: "8px",
+        cursor: "pointer",
+        transition: "opacity 0.2s",
+        "&:active": { opacity: 0.8 },
+      },
+
+      ".qty-control": {
         display: "flex",
         alignItems: "center",
-        backgroundColor: theme.colors.secondary,
-        color: theme.colors.background,
-        border: "none",
-        outline: "none",
-        padding: "0.5rem",
-        borderRadius: "2px",
-        cursor: "pointer",
+        gap: "0.8rem",
+        backgroundColor: theme.title === 'light' ? "#f5f5f5" : "rgba(255,255,255,0.1)",
+        padding: "0.25rem",
+        borderRadius: "8px",
 
-        "&:hover": {
-          backgroundColor: theme.colors.primary,
+        "button": {
+          minWidth: "28px",
+          height: "28px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "none",
+          borderRadius: "6px",
+          cursor: "pointer",
+          fontWeight: "bold",
+          fontSize: "1rem",
+
+          "&.remove": {
+            backgroundColor: "#fff",
+            color: "#ff4d4f",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+            "svg": { width: "14px", height: "14px" }
+          },
+
+          "&.add": {
+            backgroundColor: theme.colors.primary,
+            color: "#fff",
+          }
         },
 
-        '&.trashIcon': {
-          padding: "0",
-          margin: "0",
-
-          'svg': {
-            width: "14px",
-            height: "14px",
-          },
-          backgroundColor: theme.colors.background,
-          color: theme.colors.primary,
-          cursor: "pointer",
+        "span": {
+          fontSize: "0.9rem",
+          fontWeight: "600",
+          color: theme.colors.text,
+          minWidth: "16px",
+          textAlign: "center",
         }
       }
-    },
+    }
   },
 
   "img": {
-    width: "100px",
-    height: "100px",
-    borderRadius: "0.5rem",
+    width: "90px",
+    height: "90px",
+    borderRadius: "12px",
+    objectFit: "cover",
+    flexShrink: 0,
+    backgroundColor: theme.colors.background,
   }
 }))
 
@@ -117,56 +152,66 @@ export const Item = styled("div")(({ theme }) => ({
 export const Orders = styled(motion.div)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
-  width: "20%",
-  height: "fit-content",
-  padding: "0.5rem",
+  width: "100%",
+  maxWidth: "500px",
+  height: "85vh",
+  padding: "1.5rem",
   backgroundColor: theme.colors.background,
   color: theme.colors.text,
-  border: `2px solid ${theme.colors.primary}`,
-  borderRadius: "5px",
+  borderRadius: "20px 20px 0 0",
   position: "fixed",
-  bottom: "1rem",
-  right: "35%",
-  gap: "1rem",
-  overflowY: "auto",
-  overflowX: "hidden",
+  bottom: "0",
+  left: "50%",
+  transform: "translateX(-50%)",
+  gap: "1.5rem",
+  boxShadow: "0 -10px 40px rgba(0,0,0,0.2)",
+  zIndex: 1000,
+  overflow: "hidden",
 
-  "&::-webkit-scrollbar": {
-    width: "5px",
-    height: "5px",
+  "@media (min-width: 769px)": {
+    width: "400px",
+    right: "2rem",
+    left: "auto",
+    bottom: "2rem",
+    borderRadius: "16px",
+    height: "auto",
+    maxHeight: "80vh",
+    transform: "none",
   },
 
-  "&::-webkit-scrollbar-track": {
-    background: "#f1f1f1",
-    borderRadius: "5px",
-  },
-
-  "&::-webkit-scrollbar-thumb": {
-    background: "#cecece",
-    borderRadius: "5px",
-  },
-
-  "> div": {
+  "> div:first-of-type": {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    padding: "0.5rem",
+    borderBottom: `1px solid ${theme.title === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}`,
+    paddingBottom: "1rem",
 
     "h1": {
-      fontSize: "20px",
-      fontWeight: "600",
-      lineHeight: "1.5rem",
+      fontSize: "1.25rem",
+      fontWeight: "700",
+      margin: 0,
     },
 
     "button": {
       background: "none",
       border: "none",
       cursor: "pointer",
-      marginRight: "15px",
+      padding: "0.5rem",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: "50%",
+      transition: "background 0.2s",
+
+      "&:hover": {
+        background: theme.title === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.1)',
+      },
 
       "svg": {
         color: theme.colors.text,
+        width: "24px",
+        height: "24px",
       }
     }
   },
@@ -174,95 +219,113 @@ export const Orders = styled(motion.div)(({ theme }) => ({
   "div.orderSumary": {
     display: "flex",
     flexDirection: "column",
-    alignItems: "flex-start",
-    justifyContent: "flex-start",
-    gap: "8px",
-    width: "100%",
-    height: "100%",
+    gap: "1rem",
+    flex: 1,
+    overflowY: "auto",
+    paddingRight: "0.5rem",
 
-    h3: {
-      fontSize: "12px",
-      fontWeight: "600",
-      lineHeight: "1.5rem",
+    "&::-webkit-scrollbar": {
+      width: "4px",
+    },
+    "&::-webkit-scrollbar-thumb": {
+      background: theme.title === 'light' ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)",
+      borderRadius: "4px",
     },
   },
 
   "div.orderItem": {
-    padding: "5px 15px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    width: "80%",
-    height: "60px",
-    borderRadius: "2px",
+    width: "100%",
+    padding: "0.5rem",
+    borderRadius: "12px",
+    background: theme.title === 'light' ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.05)",
     gap: "1rem",
-    boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.1)",
 
     "img": {
       width: "50px",
       height: "50px",
-      borderRadius: "0.5rem",
+      borderRadius: "8px",
+      objectFit: "cover",
     },
 
     "p": {
-      fontSize: "12px",
-      color: theme.colors.textDescription,
-      lineHeight: "1.5rem",
+      fontSize: "0.95rem",
+      color: theme.colors.text,
+      flex: 1,
+      margin: 0,
+      fontWeight: "500",
     },
 
     "span": {
-      fontSize: "14px",
-      fontWeight: "600",
-      lineHeight: "1.5rem",
+      fontSize: "0.95rem",
+      fontWeight: "700",
+      color: theme.colors.primary,
     },
   },
 
-  "> p": {
-    fontSize: "20px",
-    lineHeight: "1.5rem",
+  "> div:last-child": {
+    display: "flex",
+    flexDirection: "column",
+    gap: "1rem",
+    marginTop: "auto",
+    paddingTop: "1rem",
+    borderTop: `1px solid ${theme.title === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}`,
   },
 
-  "> button": {
+  "p.total": {
+    fontSize: "1.25rem",
+    fontWeight: "700",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    margin: 0,
+  },
+
+  "> button.checkout-btn": {
     width: "100%",
-    marginTop: "0 auto",
-    backgroundColor: theme.colors.secondary,
-    color: theme.colors.background,
+    backgroundColor: theme.colors.primary,
+    color: "#fff",
     border: "none",
-    outline: "none",
+    fontSize: "1rem",
+    fontWeight: "700",
+    padding: "1rem",
+    borderRadius: "12px",
     cursor: "pointer",
-    padding: "0.5rem",
-    borderRadius: "2px",
-    transition: "all 0.2s ease-in-out",
-    fontWeight: "600",
+    boxShadow: `0 4px 12px ${theme.colors.primary}40`,
 
     "&:hover": {
-      backgroundColor: "#cecece",
-      color: theme.colors.text,
+      transform: "translateY(-2px)",
+      boxShadow: `0 6px 16px ${theme.colors.primary}60`,
     },
   },
-
-  "@media (max-width: 768px)": {
-    width: "70%",
-    right: "1rem",
-  }
 }))
 
 export const CartToggle = styled("button")(({ theme }) => ({
   display: "flex",
   position: "fixed",
-  bottom: "1rem",
-  right: "35%",
-  width: "50px",
-  height: "50px",
+  bottom: "2rem",
+  right: "2rem",
+  width: "60px",
+  height: "60px",
   alignItems: "center",
   justifyContent: "center",
-  backgroundColor: theme.colors.secondary,
-  color: theme.colors.background,
+  backgroundColor: theme.colors.primary,
+  color: "#fff",
   border: "none",
   borderRadius: "50%",
   cursor: "pointer",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+  zIndex: 999,
+  transition: "transform 0.2s",
 
-  "@media (max-width: 768px)": {
-    right: "1rem",
+  "&:hover": {
+    transform: "scale(1.05)",
+  },
+
+  "svg": {
+    width: "28px",
+    height: "28px",
   }
 }))

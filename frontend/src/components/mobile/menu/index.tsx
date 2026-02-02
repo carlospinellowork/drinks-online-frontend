@@ -1,23 +1,20 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom'; // Para acessar o search da URL
+import DrinkPlaceholder from '../../../assets/drink-placeholder.png';
 import CartIcon from '../../../assets/icons/cart';
 import Close from '../../../assets/icons/close';
 import Trash2 from '../../../assets/icons/trash2';
 import { useCart } from '../../../context/useCart';
-import { useDrinks } from '../../../hooks/useDrinks';
+import { useGetDrinks } from '../../../queries/drinks';
 import { TDrinksData } from '../../../types/drinksData';
+import { Loading } from '../../common/Loading';
 import Payment from './payment';
 import * as Styled from './styled';
 type MenuProps = {
   category?: string;
 };
 
-type TItemProps = {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-} & TDrinksData;
+
 
 const Menu = ({ category }: MenuProps) => {
   const [isOpenOrder, setIsOpenOrder] = useState(false);
@@ -39,7 +36,7 @@ const Menu = ({ category }: MenuProps) => {
   const [searchParams] = useSearchParams();
   const search = searchParams.get('search') || '';
 
-  const { data: drinks, error, isLoading } = useDrinks({ category, search });
+  const { data: drinks, error, isLoading } = useGetDrinks({ category, search });
 
   const { cart, addToCart, removeToCart, finalizeOrder } = useCart();
 
@@ -49,7 +46,7 @@ const Menu = ({ category }: MenuProps) => {
     { category: 'beers', title: 'Cervejas' },
   ];
 
-  if (isLoading) return <p>Carregando...</p>;
+  if (isLoading) return <Loading />;
   if (error) return <p>Erro: {error.message}</p>;
 
   const filteredDrinks = drinks?.filter(({ name }: TDrinksData) =>
@@ -72,37 +69,43 @@ const Menu = ({ category }: MenuProps) => {
       </Styled.Title>
       <Styled.List>
         {filteredDrinks?.length ? (
-          filteredDrinks.map((item: TItemProps) => (
+          filteredDrinks.map((item: TDrinksData) => (
             <Styled.Item key={item.id}>
               <div>
                 <h1>{item.name}</h1>
                 <span>{descriptionDots(item.description ?? '')}</span>
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}
-                >
-                  <p>R$ {item.price}</p>
-                  <button onClick={() => addToCart(item)}>
-                    Adicionar ao carrinho
-                  </button>
-                  {cart.find((cartItem) => cartItem.id === item.id) && (
+                <div className="actions">
+                  <p className="price">R$ {Number(item.price).toFixed(2).replace('.', ',')}</p>
+
+                  {cart.find((cartItem) => cartItem.id === item.id) ? (
+                    <div className="qty-control">
+                      <button
+                        className="remove"
+                        onClick={() => removeToCart({ ...item, price: Number(item.price), quantity: 1 })}
+                      >
+                        {cart.find((cartItem) => cartItem.id === item.id)?.quantity === 1 ? <Trash2 /> : '-'}
+                      </button>
+                      <span className="quantity">
+                        {cart.find((cartItem) => cartItem.id === item.id)?.quantity}
+                      </span>
+                      <button
+                        className="add"
+                        onClick={() => addToCart({ ...item, price: Number(item.price), photo: item.photo || DrinkPlaceholder, quantity: 1 })}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
                     <button
-                      className="trashIcon"
-                      onClick={() => removeToCart(item)}
+                      className="add-btn"
+                      onClick={() => addToCart({ ...item, price: Number(item.price), photo: item.photo || DrinkPlaceholder, quantity: 1 })}
                     >
-                      <Trash2 />
+                      Adicionar
                     </button>
-                  )}
-                  {cart.find((cartItem) => cartItem.id === item.id) && (
-                    <span className="quantity">
-                      {
-                        cart.find((cartItem) => cartItem.id === item.id)
-                          ?.quantity
-                      }
-                    </span>
                   )}
                 </div>
               </div>
-              {item.photo && <img src={item.photo} alt={item.name} />}
+              <img src={item.photo || DrinkPlaceholder} alt={item.name} />
             </Styled.Item>
           ))
         ) : (
@@ -128,7 +131,7 @@ const Menu = ({ category }: MenuProps) => {
               <div className="orderSumary">
                 {cart.map((item: any) => (
                   <div className="orderItem" key={item.id}>
-                    <img src={item.photo} alt={item.name} />
+                    <img src={item.photo || DrinkPlaceholder} alt={item.name} />
                     <p>
                       {item.quantity}x {item.name}
                     </p>

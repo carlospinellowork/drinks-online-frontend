@@ -1,6 +1,9 @@
 import { useParams } from 'react-router-dom';
 import { useScreenWidth } from '../../hooks/useScreenWidth';
+import Cart from '../desktop/cart';
+import Categories from '../desktop/categories';
 import { MenuNavbar } from '../desktop/menuNavbar';
+import ProductList from '../desktop/productList';
 import Header from '../mobile/header';
 import Hero from '../mobile/hero';
 import Menu from '../mobile/menu';
@@ -14,12 +17,19 @@ const Page = ({ toggleTheme }: PageProps) => {
   const { category } = useParams<{ category: string }>();
   const screenWidth = useScreenWidth();
   const isDesktop = screenWidth > 1024;
+
   return (
     <>
       {isDesktop && (
         <Styled.Container>
-          <MenuNavbar />
-          <h1>Novo Cardapio em breve (versão desktop)</h1>
+          <MenuNavbar toggleTheme={toggleTheme} />
+          <Categories />
+          <Styled.DesktopMain>
+            <Styled.ContentArea>
+              <ProductList />
+            </Styled.ContentArea>
+            <Cart />
+          </Styled.DesktopMain>
         </Styled.Container>
       )}
       {!isDesktop && (

@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from 'react'
+import { createContext, ReactNode, useCallback, useContext, useState } from 'react'
 
 type CartItem = {
-  id: number
+  id: string
   name: string
   price: number
   quantity: number
+  photo?: string
 }
 
 type CartContextType = {
@@ -35,7 +36,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       if (isExistItem !== -1) {
         const updatedCart = [...prevCart]
-        updatedCart[isExistItem].quantity += 1
+        updatedCart[isExistItem] = {
+          ...updatedCart[isExistItem],
+          quantity: updatedCart[isExistItem].quantity + 1
+        }
         return updatedCart
       } else {
         return [...prevCart, { ...item, quantity: 1 }]
@@ -49,11 +53,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       if (isExistItem !== -1) {
         const updatedCart = [...prevCart];
+        const updatedItem = { ...updatedCart[isExistItem] };
 
-        updatedCart[isExistItem].quantity -= 1;
+        updatedItem.quantity -= 1;
 
-        if (updatedCart[isExistItem].quantity <= 0) {
+        if (updatedItem.quantity <= 0) {
           updatedCart.splice(isExistItem, 1);
+        } else {
+          updatedCart[isExistItem] = updatedItem;
         }
 
         return updatedCart;

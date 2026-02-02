@@ -7,6 +7,6 @@ export default {
 
     background: '#262626',
     text: '#f5f5f5',
-    textDescription: '#5e5e5e'
+    textDescription: '#b3b3b3'
   }
 }

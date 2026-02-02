@@ -1,123 +1,196 @@
+import { motion } from "framer-motion";
 import styled from "styled-components";
 
 export const Container = styled("div")(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
-  padding: "1rem",
+  alignItems: "center",
+  width: "100%",
+  paddingBottom: "1rem",
   background: theme.colors.background,
-  boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.1)",
-
-  'img': {
-    width: "250px",
-    height: "250px",
-    alignSelf: "center",
-  },
-}))
-
-export const Title = styled("h1")(({ theme }) => ({
-  color: theme.colors.primary,
-  fontSize: "2.5rem",
-  textTransform: "capitalize",
-  fontWeight: "600",
-  lineHeight: "3rem",
-
-}))
-
-export const Text = styled("p")(({ theme }) => ({
-  color: theme.colors.secondary,
-  fontSize: "12px",
-  fontWeight: "600",
-  marginTop: "15px",
-}))
-
-export const Address = styled("p")(({ theme }) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: "5px",
-  color: theme.colors.text,
-  fontSize: "1rem",
-  fontWeight: "600",
-  marginTop: "15px",
-
-  "svg": {
-    color: theme.title === 'light' ? theme.colors.primary : theme.colors.text
-  }
-}))
-
-export const Link = styled("a")(({ theme }) => ({
-  color: theme.title === 'light' ? theme.colors.secondary : theme.colors.text,
-  textDecoration: "none",
-
-  ".social-medias": {
-    color: theme.title === 'light' ? theme.colors.primary : theme.colors.text,
-    fontSize: "1rem",
-  }
-}))
-
-export const SocialMedias = styled("div")(({ theme }) => ({
-  display: "flex",
-  justifyContent: "flex-start",
-  marginTop: "15px",
-  gap: "15px",
-
-  'div': {
-    display: "flex",
-    alignItems: "center",
-    gap: "5px",
-    padding: "5px 0",
-
-    'svg': {
-      width: "20px",
-      height: "20px",
-      color: theme.title === 'light' ? theme.colors.primary : theme.colors.text
-    },
-  }
-}))
-
-export const Button = styled("button")(({ theme }) => ({
-  background: theme.colors.primary,
-  color: theme.title === 'light' ? theme.colors.background : theme.colors.text,
-  fontSize: "14px",
-  fontWeight: "600",
-  border: "none",
-  padding: "10px 20px",
-  borderRadius: "2px",
-  marginTop: "15px",
-  cursor: "pointer",
-  transition: "all 0.3s ease",
-  
-  "&:hover": {
-    background: theme.title === 'light' ? theme.colors.secondary : theme.colors.primary
-  },
-
-}))
-
-export const ToggleButton = styled("button")<{ isDarkMode: boolean }>(({ theme, isDarkMode }) => ({
-  backgroundColor: theme.colors.background,
-  border: `1px solid ${theme.title === 'light' ? theme.colors.primary : theme.colors.text}`,
-  borderRadius: "20px",
-  cursor: "pointer",
-  padding: "5px 10px",
-  fontSize: "10px",
-  transition: "all 0.3s ease",
-  display: "flex",
-  alignItems: "center",
-  gap: "5px",
-
-  "p": {
-    color: theme.title === 'light' ? theme.colors.primary : theme.colors.text,
-    fontWeight: "600",
-    transition: "transform 0.3s ease",
-    transform: isDarkMode ? 'translateX(-20px)' : 'translateX(0)',
-  },
+  borderBottom: `1px solid ${theme.title === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'}`,
+  position: "relative",
 }));
 
-export const ToggleSwitch = styled("span")<{ isDarkMode: boolean }>(({ theme, isDarkMode }) => ({
-  width: "15px",
-  height: "15px",
+export const Banner = styled("div")(({ theme }) => ({
+  width: "100%",
+  height: "140px",
+  background: `linear-gradient(135deg, ${theme.colors.primary} 0%, ${theme.colors.secondary} 100%)`,
+  position: "absolute",
+  top: 0,
+  left: 0,
+  zIndex: 0,
+}));
+
+export const ThemeButton = styled("button")(({ theme }) => ({
+  position: "absolute",
+  top: "1rem",
+  right: "1rem",
+  width: "40px",
+  height: "40px",
   borderRadius: "50%",
-  backgroundColor: theme.title === 'light' ? theme.colors.primary : theme.colors.text,
-  transition: "transform 0.3s ease",
-  boxShadow: "0 0 5px 0 rgba(0, 0, 0, 0.2)",
-  transform: isDarkMode ? 'translateX(60px)' : 'translateX(0)',
+  background: "rgba(255, 255, 255, 0.2)",
+  backdropFilter: "blur(4px)",
+  border: "none",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  zIndex: 1,
+  color: "#fff",
+  transition: "all 0.2s",
+
+  "&:hover": {
+    background: "rgba(255, 255, 255, 0.3)",
+    transform: "scale(1.05)",
+  },
+
+  "svg": {
+    width: "20px",
+    height: "20px",
+  }
+}));
+
+export const ContentWrapper = styled("div")(({ theme }) => ({
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  width: "100%",
+  padding: "0 1.5rem",
+  marginTop: "80px", // To overlap banner
+  zIndex: 1,
+}));
+
+export const LogoWrapper = styled(motion.div)(({ theme }) => ({
+  width: "120px",
+  height: "120px",
+  borderRadius: "50%",
+  background: theme.colors.background,
+  padding: "4px",
+  boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+
+  "img": {
+    width: "100%",
+    height: "100%",
+    borderRadius: "50%",
+    objectFit: "cover",
+  }
+}));
+
+export const Title = styled("h1")(({ theme }) => ({
+  color: theme.colors.text,
+  fontSize: "1.75rem",
+  fontWeight: "800",
+  marginTop: "1rem",
+  textAlign: "center",
+  lineHeight: "1.2",
+}));
+
+export const Address = styled("a")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "6px",
+  color: theme.colors.textDescription,
+  fontSize: "0.9rem",
+  fontWeight: "500",
+  marginTop: "0.5rem",
+  textDecoration: "none",
+  textAlign: "center",
+  width: "100%",
+
+  "svg": {
+    color: theme.colors.primary,
+    width: "16px",
+    height: "16px",
+  }
+}));
+
+export const Description = styled("p")(({ theme }) => ({
+  color: theme.colors.textDescription,
+  fontSize: "0.9rem",
+  textAlign: "center",
+  lineHeight: "1.5",
+  marginTop: "1rem",
+  padding: "0 0.5rem",
+}))
+
+export const ActionsRow = styled("div")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "1rem",
+  width: "100%",
+  marginTop: "1.5rem",
+}));
+
+export const ActionButton = styled("a")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "45px",
+  height: "45px",
+  borderRadius: "12px",
+  background: theme.title === 'light' ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.05)",
+  color: theme.colors.primary,
+  textDecoration: "none",
+  transition: "all 0.2s",
+
+  "&:hover": {
+    background: theme.colors.primary,
+    color: "#fff",
+    transform: "translateY(-2px)",
+    boxShadow: `0 4px 12px ${theme.colors.primary}40`,
+  },
+
+  "svg": {
+    width: "20px",
+    height: "20px",
+  }
+}));
+
+export const InfoButton = styled("button")(({ theme }) => ({
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  width: "100%",
+  padding: "1rem",
+  marginTop: "1.5rem",
+  background: theme.title === 'light' ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.05)",
+  border: "none",
+  borderRadius: "12px",
+  cursor: "pointer",
+  textAlign: "left",
+
+  "div": {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+
+    "strong": {
+      color: theme.colors.text,
+      fontSize: "0.95rem",
+    },
+
+    "span": {
+      color: theme.colors.textDescription,
+      fontSize: "0.85rem",
+      lineHeight: "1.3",
+    }
+  },
+
+  "svg": {
+    color: theme.colors.primary,
+    transform: "rotate(-90deg)",
+  }
+}));
+
+export const Divider = styled("div")(({ theme }) => ({
+  width: "100%",
+  height: "1px",
+  background: theme.title === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)',
+  margin: "1.5rem 0",
 }));

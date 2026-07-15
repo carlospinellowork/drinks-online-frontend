@@ -1,0 +1,26 @@
+{
+  "name": "Faustino Drinks",
+  "description": "Seja bem-vindo ao Faustino Drinks. Aqui, agradecemos pelo interesse em nos visitar. Venha nos visitar e aproveite o nosso espaço.",
+  "address": "Endereço do restaurante",
+  "whatsappNumber": "5511957944402",
+  "instagramUrl": "https://instagram.com/faustinodrinks",
+  "email": "faustinodrinks@outlook.com",
+  "logoUrl": "",
+  "bannerUrl": "",
+  "operatingHours": {
+    "weekdays": "Terça, Quarta e Quinta: 18:00 a 23:00",
+    "weekends": "Sexta, Sábado e Domingo: 18:00 a 01:00"
+  },
+  "theme": {
+    "primary": "#436850",
+    "secondary": "#12372A",
+    "background": "#ffffff",
+    "foreground": "#09090b",
+    "borderRadius": "0.5rem"
+  },
+  "categories": [
+    { "id": "drinks", "name": "Drinks" },
+    { "id": "whiskeys", "name": "Bebidas" },
+    { "id": "beers", "name": "Cervejas" }
+  ]
+}

@@ -10,12 +10,31 @@ export type CartItem = {
   photo?: string;
 };
 
+export type FinalizeOrderParams = {
+  customerName: string;
+  customerPhone: string;
+  orderType: 'delivery' | 'table' | 'takeaway';
+  tableNumber?: string;
+  address?: {
+    street: string;
+    number: string;
+    neighborhood: string;
+    complement?: string;
+  };
+  deliveryFee: number;
+  paymentMethod: string;
+  couponCode?: string;
+  discountValue: number;
+  subtotal: number;
+  total: number;
+};
+
 type CartContextType = {
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, 'quantity'>) => void;
   removeToCart: (item: { id: string }) => void;
   clearCart: () => void;
-  finalizeOrder: (whatsappNumber: string, restaurantName: string, paymentMethod: string) => void;
+  finalizeOrder: (params: FinalizeOrderParams) => Promise<string>;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -95,31 +114,38 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('restaurant_cart');
   }, []);
 
-  const finalizeOrder = useCallback((whatsappNumber: string, restaurantName: string, paymentMethod: string) => {
-    if (cart.length === 0) return;
+  const finalizeOrder = useCallback(async (params: FinalizeOrderParams): Promise<string> => {
+    if (cart.length === 0) {
+      throw new Error('O carrinho está vazio.');
+    }
 
-    // Build items text lines
-    const itemsMessage = cart
-      .map(item => `• ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}`)
-      .join('\n');
+    const orderData = {
+      ...params,
+      items: cart.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        photo: item.photo
+      }))
+    };
 
-    const total = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    
-    // Create WhatsApp text message with clean formatting
-    const welcome = `*Novo Pedido - ${restaurantName}*\n\n`;
-    const details = `*Itens do Pedido:*\n${itemsMessage}\n\n`;
-    const summary = `*Forma de Pagamento:* ${paymentMethod}\n`;
-    const footer = `*Total:* R$ ${total.toFixed(2).replace('.', ',')}`;
-    
-    const rawText = `${welcome}${details}${summary}${footer}`;
-    const encodedText = encodeURIComponent(rawText);
-    
-    // Clean up country code and format whatsapp link
-    const cleanPhone = whatsappNumber.replace(/\D/g, '');
-    const whatsappLink = `https://wa.me/${cleanPhone}?text=${encodedText}`;
-    
-    window.open(whatsappLink, '_blank');
+    const response = await fetch('/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(orderData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Erro ao registrar o pedido.');
+    }
+
+    const data = await response.json();
     clearCart();
+    return data.order.id;
   }, [cart, clearCart]);
 
   return (

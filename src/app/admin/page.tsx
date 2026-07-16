@@ -14,10 +14,22 @@ import {
   AlertCircle,
   Eye,
   Loader2,
-  X
+  X,
+  ClipboardList,
+  Bike,
+  Ticket,
+  Bell,
+  Check,
+  TrendingUp,
+  DollarSign,
+  ShoppingBag,
+  Clock,
+  Utensils,
+  Store,
+  Instagram
 } from 'lucide-react';
 import Link from 'next/link';
-import { Product, RestaurantConfig } from '@/types';
+import { Product, RestaurantConfig, Order, OrderStatus } from '@/types';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -39,13 +51,13 @@ import {
   DialogDescription, 
   DialogFooter, 
   DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+  DialogTitle 
 } from '@/components/ui/dialog';
 
 export default function AdminPage() {
   const [config, setConfig] = useState<RestaurantConfig | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Feedback Messages
@@ -57,7 +69,37 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [savingProduct, setSavingProduct] = useState(false);
 
-  // Fetch all data
+  // Sound Notification trigger helper
+  const playOrderSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      gain1.gain.setValueAtTime(0.08, ctx.currentTime);
+      osc1.start();
+      osc1.stop(ctx.currentTime + 0.15);
+      
+      setTimeout(() => {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        gain2.gain.setValueAtTime(0.08, ctx.currentTime);
+        osc2.start();
+        osc2.stop(ctx.currentTime + 0.25);
+      }, 160);
+    } catch (e) {
+      console.warn("Could not play alert sound:", e);
+    }
+  };
+
+  // Fetch initial configuration & products
   useEffect(() => {
     async function loadData() {
       try {
@@ -72,11 +114,11 @@ export default function AdminPage() {
           setConfig(configData);
           setProducts(productsData.data);
         } else {
-          showStatus('error', 'Erro ao carregar os dados do servidor.');
+          showStatus('error', 'Erro ao carregar dados do restaurante.');
         }
       } catch (err) {
         console.error(err);
-        showStatus('error', 'Erro ao conectar ao servidor.');
+        showStatus('error', 'Erro ao se conectar ao servidor.');
       } finally {
         setLoading(false);
       }
@@ -84,47 +126,88 @@ export default function AdminPage() {
     loadData();
   }, []);
 
+  // Fetch orders and run polling
+  useEffect(() => {
+    let active = true;
+    let localOrdersCache: Order[] = [];
+
+    async function loadOrders() {
+      try {
+        const res = await fetch('/api/orders');
+        if (res.ok && active) {
+          const data = await res.json();
+          const fetchedOrders: Order[] = data.orders || [];
+
+          // Play alert sound if a new pending order arrived
+          if (localOrdersCache.length > 0 && fetchedOrders.length > localOrdersCache.length) {
+            const hasNewPending = fetchedOrders.some(
+              newOrd => newOrd.status === 'pending' && !localOrdersCache.some(oldOrd => oldOrd.id === newOrd.id)
+            );
+            if (hasNewPending) {
+              playOrderSound();
+            }
+          }
+
+          setOrders(fetchedOrders);
+          localOrdersCache = fetchedOrders;
+        }
+      } catch (err) {
+        console.error('Failed to poll orders:', err);
+      }
+    }
+
+    loadOrders();
+    const interval = setInterval(loadOrders, 8000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   const showStatus = (type: 'success' | 'error', text: string) => {
     setStatusMsg({ type, text });
     setTimeout(() => {
       setStatusMsg(null);
-    }, 4000);
+    }, 4500);
   };
 
-  // Save Config
-  const handleSaveConfig = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!config) return;
+  // Save general configuration (Config & Branding & Delivery/Coupons tabs share the save endpoint)
+  const handleSaveConfig = async (e?: React.FormEvent, customConfig?: RestaurantConfig) => {
+    if (e) e.preventDefault();
+    const targetConfig = customConfig || config;
+    if (!targetConfig) return;
     
     setSavingConfig(true);
     try {
       const res = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
+        body: JSON.stringify(targetConfig),
       });
 
       if (res.ok) {
-        showStatus('success', 'Configurações salvas com sucesso!');
-        // Refresh local theme variables
+        showStatus('success', 'Configurações atualizadas com sucesso!');
+        setConfig(targetConfig);
+        // Refresh CSS variable tokens
         const root = document.documentElement;
-        root.style.setProperty('--primary', config.theme.primary);
-        root.style.setProperty('--secondary', config.theme.secondary);
-        root.style.setProperty('--background', config.theme.background);
-        root.style.setProperty('--foreground', config.theme.foreground);
-        root.style.setProperty('--radius', config.theme.borderRadius);
+        root.style.setProperty('--primary', targetConfig.theme.primary);
+        root.style.setProperty('--secondary', targetConfig.theme.secondary);
+        root.style.setProperty('--background', targetConfig.theme.background);
+        root.style.setProperty('--foreground', targetConfig.theme.foreground);
+        root.style.setProperty('--radius', targetConfig.theme.borderRadius || '0.5rem');
       } else {
         showStatus('error', 'Erro ao salvar configurações.');
       }
     } catch (err) {
       console.error(err);
-      showStatus('error', 'Falha na requisição para salvar.');
+      showStatus('error', 'Falha na conexão ao salvar.');
     } finally {
       setSavingConfig(false);
     }
   };
 
-  // Add category helper
+  // Add Category Handler
   const handleAddCategory = () => {
     if (!config) return;
     const catName = prompt('Digite o nome da nova categoria:');
@@ -137,30 +220,32 @@ export default function AdminPage() {
       return;
     }
 
-    setConfig({
+    const updated = {
       ...config,
       categories: [...config.categories, { id, name: catName }]
-    });
+    };
+    handleSaveConfig(undefined, updated);
   };
 
-  // Delete category helper
+  // Delete Category Handler
   const handleDeleteCategory = (catId: string) => {
     if (!config) return;
     if (config.categories.length <= 1) {
       alert('O restaurante deve ter pelo menos uma categoria.');
       return;
     }
-    if (!confirm('Tem certeza? Produtos associados a essa categoria não aparecerão corretamente no cardápio.')) {
+    if (!confirm('Deseja realmente remover esta categoria? Drinks nesta categoria não serão mostrados.')) {
       return;
     }
 
-    setConfig({
+    const updated = {
       ...config,
       categories: config.categories.filter(c => c.id !== catId)
-    });
+    };
+    handleSaveConfig(undefined, updated);
   };
 
-  // Open Add Dialog
+  // Product CRUD
   const handleOpenAddProduct = () => {
     setEditingProduct({
       name: '',
@@ -169,6 +254,10 @@ export default function AdminPage() {
       category: config?.categories[0]?.id || 'drinks',
       isActive: true,
       photo: '',
+      sweetness: 3,
+      citric: 3,
+      alcoholStrength: 3,
+      alcoholBase: 'sem-alcool',
       availableDays_sunday: true,
       availableDays_monday: true,
       availableDays_tuesday: true,
@@ -180,13 +269,11 @@ export default function AdminPage() {
     setIsProductDialogOpen(true);
   };
 
-  // Open Edit Dialog
   const handleOpenEditProduct = (product: Product) => {
     setEditingProduct(product);
     setIsProductDialogOpen(true);
   };
 
-  // Save Product (Create or Update)
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
@@ -207,7 +294,7 @@ export default function AdminPage() {
         const data = await res.json();
         if (isNew) {
           setProducts([...products, data.product]);
-          showStatus('success', 'Produto adicionado com sucesso!');
+          showStatus('success', 'Produto criado com sucesso!');
         } else {
           setProducts(products.map(p => p.id === data.product.id ? data.product : p));
           showStatus('success', 'Produto atualizado com sucesso!');
@@ -215,36 +302,171 @@ export default function AdminPage() {
         setIsProductDialogOpen(false);
       } else {
         const data = await res.json();
-        showStatus('error', data.error || 'Erro ao processar produto.');
+        showStatus('error', data.error || 'Erro ao salvar produto.');
       }
     } catch (err) {
       console.error(err);
-      showStatus('error', 'Falha na requisição do produto.');
+      showStatus('error', 'Falha ao salvar produto.');
     } finally {
       setSavingProduct(false);
     }
   };
 
-  // Delete Product
   const handleDeleteProduct = async (id: string) => {
-    if (!confirm('Deseja realmente excluir este produto?')) return;
+    if (!confirm('Deseja excluir permanentemente este produto?')) return;
 
     try {
-      const res = await fetch(`/api/products?id=${id}`, {
-        method: 'DELETE'
-      });
-
+      const res = await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         setProducts(products.filter(p => p.id !== id));
-        showStatus('success', 'Produto removido com sucesso!');
+        showStatus('success', 'Produto excluído com sucesso.');
       } else {
-        showStatus('error', 'Erro ao excluir o produto.');
+        showStatus('error', 'Erro ao excluir produto.');
       }
     } catch (err) {
       console.error(err);
-      showStatus('error', 'Falha na requisição de exclusão.');
+      showStatus('error', 'Falha na requisição.');
     }
   };
+
+  // Neighborhood (Taxas de entrega) management helpers
+  const handleAddNeighborhood = () => {
+    if (!config) return;
+    const name = prompt('Digite o nome do Bairro:');
+    if (!name) return;
+    const feeInput = prompt('Digite a taxa de entrega em R$ (Ex: 5.50):');
+    const fee = Number(feeInput);
+    
+    if (isNaN(fee) || fee < 0) {
+      alert('Taxa de entrega inválida.');
+      return;
+    }
+
+    const neighborhoods = config.deliveryNeighborhoods || [];
+    if (neighborhoods.some(n => n.name.toLowerCase() === name.toLowerCase())) {
+      alert('Este bairro já está cadastrado!');
+      return;
+    }
+
+    const updated = {
+      ...config,
+      deliveryNeighborhoods: [...neighborhoods, { name, fee }]
+    };
+    handleSaveConfig(undefined, updated);
+  };
+
+  const handleDeleteNeighborhood = (name: string) => {
+    if (!config) return;
+    const neighborhoods = config.deliveryNeighborhoods || [];
+    const updated = {
+      ...config,
+      deliveryNeighborhoods: neighborhoods.filter(n => n.name !== name)
+    };
+    handleSaveConfig(undefined, updated);
+  };
+
+  // Coupon management helpers
+  const handleAddCoupon = () => {
+    if (!config) return;
+    const code = prompt('Digite o código do cupom (Ex: DRINKS10):')?.toUpperCase();
+    if (!code) return;
+    const type = (confirm('Clique em OK para desconto percentual (%) ou CANCELAR para desconto fixo (R$)') 
+      ? 'percentage' 
+      : 'fixed') as 'percentage' | 'fixed';
+    const valInput = prompt(type === 'percentage' ? 'Digite a porcentagem de desconto (1 a 100):' : 'Digite o valor fixo de desconto (R$):');
+    const value = Number(valInput);
+
+    if (isNaN(value) || value <= 0 || (type === 'percentage' && value > 100)) {
+      alert('Valor de desconto inválido.');
+      return;
+    }
+
+    const coupons = config.coupons || [];
+    if (coupons.some(c => c.code === code)) {
+      alert('Este cupom já existe!');
+      return;
+    }
+
+    const updated = {
+      ...config,
+      coupons: [...coupons, { code, type, value, isActive: true }]
+    };
+    handleSaveConfig(undefined, updated);
+  };
+
+  const handleToggleCoupon = (code: string) => {
+    if (!config) return;
+    const coupons = config.coupons || [];
+    const updated = {
+      ...config,
+      coupons: coupons.map(c => c.code === code ? { ...c, isActive: !c.isActive } : c)
+    };
+    handleSaveConfig(undefined, updated);
+  };
+
+  const handleDeleteCoupon = (code: string) => {
+    if (!config) return;
+    const coupons = config.coupons || [];
+    const updated = {
+      ...config,
+      coupons: coupons.filter(c => c.code !== code)
+    };
+    handleSaveConfig(undefined, updated);
+  };
+
+  // KDS Status modification handler
+  const handleUpdateStatus = async (orderId: string, currentStatus: OrderStatus) => {
+    let nextStatus: OrderStatus = 'pending';
+    if (currentStatus === 'pending') nextStatus = 'preparing';
+    else if (currentStatus === 'preparing') nextStatus = 'ready';
+    else if (currentStatus === 'ready') nextStatus = 'completed';
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: orderId, status: nextStatus })
+      });
+
+      if (res.ok) {
+        setOrders(orders.map(o => o.id === orderId ? { ...o, status: nextStatus } : o));
+        showStatus('success', `Pedido #${orderId} atualizado para ${nextStatus}.`);
+      } else {
+        showStatus('error', 'Falha ao atualizar status do pedido.');
+      }
+    } catch (err) {
+      console.error(err);
+      showStatus('error', 'Erro de conexão ao atualizar pedido.');
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm('Deseja realmente CANCELAR este pedido?')) return;
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: orderId, status: 'cancelled' })
+      });
+
+      if (res.ok) {
+        setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'cancelled' } : o));
+        showStatus('success', `Pedido #${orderId} cancelado.`);
+      } else {
+        showStatus('error', 'Erro ao cancelar o pedido.');
+      }
+    } catch (err) {
+      console.error(err);
+      showStatus('error', 'Falha de requisição.');
+    }
+  };
+
+  // Metrics calculators
+  const completedOrders = orders.filter(o => o.status === 'completed');
+  const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
+  const totalOrderCount = completedOrders.length;
+  const averageTicket = totalOrderCount > 0 ? totalRevenue / totalOrderCount : 0;
 
   if (loading) {
     return (
@@ -260,13 +482,13 @@ export default function AdminPage() {
       <div className="flex-1 flex flex-col items-center justify-center py-20 text-center">
         <AlertCircle className="h-12 w-12 text-destructive mb-3" />
         <h2 className="text-lg font-bold">Falha ao carregar as configurações</h2>
-        <p className="text-sm text-muted-foreground mt-1">Verifique os arquivos do banco de dados local.</p>
+        <p className="text-sm text-muted-foreground mt-1">Verifique as variáveis de ambiente e banco Supabase.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 space-y-6">
+    <div className="flex-1 max-w-6xl mx-auto w-full px-4 py-8 space-y-6">
       
       {/* Top Bar Navigation */}
       <div className="flex items-center justify-between border-b border-border/40 pb-4">
@@ -276,7 +498,7 @@ export default function AdminPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-black tracking-tight uppercase">Painel Administrativo</h1>
-            <p className="text-xs text-muted-foreground">Gerencie o tema, dados do restaurante e o cardápio</p>
+            <p className="text-xs text-muted-foreground">Gerenciador do cardápio online e controle de produção</p>
           </div>
         </div>
 
@@ -299,21 +521,198 @@ export default function AdminPage() {
       )}
 
       {/* Main Tabs Container */}
-      <Tabs defaultValue="geral" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-md bg-muted rounded-xl p-1 mb-6">
-          <TabsTrigger value="geral" className="rounded-lg gap-2 text-xs font-bold py-2.5">
-            <Settings className="h-3.5 w-3.5" />
-            Geral
+      <Tabs defaultValue="pedidos" className="w-full">
+        <TabsList className="grid grid-cols-4 sm:grid-cols-7 w-full bg-muted rounded-xl p-1 mb-6">
+          <TabsTrigger value="pedidos" className="rounded-lg gap-1.5 text-xs font-bold py-2.5">
+            <ClipboardList className="h-3.5 w-3.5" />
+            Pedidos
           </TabsTrigger>
-          <TabsTrigger value="design" className="rounded-lg gap-2 text-xs font-bold py-2.5">
-            <Palette className="h-3.5 w-3.5" />
-            Branding
-          </TabsTrigger>
-          <TabsTrigger value="cardapio" className="rounded-lg gap-2 text-xs font-bold py-2.5">
+          <TabsTrigger value="cardapio" className="rounded-lg gap-1.5 text-xs font-bold py-2.5">
             <Layers className="h-3.5 w-3.5" />
             Cardápio
           </TabsTrigger>
+          <TabsTrigger value="bairros" className="rounded-lg gap-1.5 text-xs font-bold py-2.5">
+            <Bike className="h-3.5 w-3.5" />
+            Entrega
+          </TabsTrigger>
+          <TabsTrigger value="cupons" className="rounded-lg gap-1.5 text-xs font-bold py-2.5">
+            <Ticket className="h-3.5 w-3.5" />
+            Cupons
+          </TabsTrigger>
+          <TabsTrigger value="geral" className="rounded-lg gap-1.5 text-xs font-bold py-2.5">
+            <Settings className="h-3.5 w-3.5" />
+            Geral
+          </TabsTrigger>
+          <TabsTrigger value="design" className="rounded-lg gap-1.5 text-xs font-bold py-2.5">
+            <Palette className="h-3.5 w-3.5" />
+            Branding
+          </TabsTrigger>
+          <TabsTrigger value="instagram" className="rounded-lg gap-1.5 text-xs font-bold py-2.5">
+            <Instagram className="h-3.5 w-3.5" />
+            Instagram
+          </TabsTrigger>
         </TabsList>
+
+        {/* ========================================================================= */}
+        {/* TAB: PEDIDOS EM TEMPO REAL (KDS + ANALYTICS)                              */}
+        {/* ========================================================================= */}
+        <TabsContent value="pedidos" className="space-y-6">
+          {/* Simple Analytics cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card className="rounded-2xl border border-border/40 shadow-sm">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-muted-foreground font-bold">Faturamento (Entregues)</span>
+                  <h3 className="text-2xl font-black text-primary mt-1">R$ {totalRevenue.toFixed(2).replace('.', ',')}</h3>
+                </div>
+                <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                  <DollarSign className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl border border-border/40 shadow-sm">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-muted-foreground font-bold">Pedidos Concluídos</span>
+                  <h3 className="text-2xl font-black text-primary mt-1">{totalOrderCount}</h3>
+                </div>
+                <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                  <ShoppingBag className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl border border-border/40 shadow-sm">
+              <CardContent className="p-5 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-muted-foreground font-bold">Ticket Médio</span>
+                  <h3 className="text-2xl font-black text-primary mt-1">R$ {averageTicket.toFixed(2).replace('.', ',')}</h3>
+                </div>
+                <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Active Orders List */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-black uppercase flex items-center gap-2">
+                  <Bell className="h-4.5 w-4.5 text-primary animate-pulse" />
+                  Painel de Produção (KDS)
+                </h3>
+                <p className="text-xs text-muted-foreground">Pedidos em aberto ordenados cronologicamente.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').map((order) => (
+                <Card key={order.id} className={cn(
+                  "rounded-2xl border transition-all duration-300 shadow-md flex flex-col justify-between overflow-hidden",
+                  order.status === 'pending' ? "border-amber-400 bg-amber-400/[0.02]" :
+                  order.status === 'preparing' ? "border-blue-400 bg-blue-400/[0.02]" :
+                  "border-purple-400 bg-purple-400/[0.02]"
+                )}>
+                  <div>
+                    {/* Card status tag */}
+                    <div className={cn(
+                      "p-2.5 text-center text-xs font-black uppercase border-b tracking-wider flex items-center justify-center gap-1.5",
+                      order.status === 'pending' ? "bg-amber-400/10 text-amber-700 border-amber-400/20" :
+                      order.status === 'preparing' ? "bg-blue-400/10 text-blue-700 border-blue-400/20" :
+                      "bg-purple-400/10 text-purple-700 border-purple-400/20"
+                    )}>
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>
+                        {order.status === 'pending' ? 'Pendente' : 
+                         order.status === 'preparing' ? 'Em Preparo' : 'Pronto / Rota'}
+                      </span>
+                    </div>
+
+                    <div className="p-4 space-y-3">
+                      {/* Order info */}
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-mono text-muted-foreground">#{order.id}</span>
+                        <span className="text-muted-foreground font-bold">
+                          {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h4 className="font-black text-sm text-foreground">{order.customerName}</h4>
+                        <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
+                      </div>
+
+                      {/* Delivery / Table info details */}
+                      <div className="text-xs bg-muted/40 p-2.5 rounded-xl space-y-1">
+                        <p className="font-bold flex items-center gap-1">
+                          {order.orderType === 'delivery' ? <Bike className="h-3.5 w-3.5 text-primary" /> : 
+                           order.orderType === 'table' ? <Utensils className="h-3.5 w-3.5 text-primary" /> :
+                           <Store className="h-3.5 w-3.5 text-primary" />}
+                          Tipo: {order.orderType === 'delivery' ? 'Entrega' : 
+                                 order.orderType === 'table' ? `Mesa ${order.tableNumber}` : 'Retirada'}
+                        </p>
+                        {order.orderType === 'delivery' && order.address && (
+                          <p className="text-[11px] leading-normal text-muted-foreground mt-1 border-t border-border/25 pt-1">
+                            {order.address.street}, {order.address.number} - {order.address.neighborhood}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-muted-foreground">Pagamento: {order.paymentMethod}</p>
+                      </div>
+
+                      {/* Items */}
+                      <div className="space-y-1.5 py-1">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground block">Itens do Pedido</span>
+                        <ul className="text-xs space-y-1 divide-y divide-border/20">
+                          {order.items.map((item, idx) => (
+                            <li key={idx} className="flex justify-between items-center py-1 first:pt-0">
+                              <span className="font-semibold text-foreground/90 leading-tight">
+                                {item.quantity}x {item.name}
+                              </span>
+                              <span className="font-mono text-muted-foreground text-[10px]">
+                                R$ {(item.price * item.quantity).toFixed(2)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card bottom actions */}
+                  <div className="p-4 border-t border-border/30 bg-muted/10 flex gap-2">
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="rounded-xl flex-1 text-xs" 
+                      onClick={() => handleCancelOrder(order.id)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="rounded-xl flex-1 font-bold text-xs bg-primary hover:bg-primary/95"
+                      onClick={() => handleUpdateStatus(order.id, order.status)}
+                    >
+                      {order.status === 'pending' ? 'Aceitar' :
+                       order.status === 'preparing' ? 'Pronto' : 'Entregar'}
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+
+              {orders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length === 0 && (
+                <div className="col-span-full py-16 text-center text-muted-foreground bg-card rounded-2xl border border-dashed border-border/60">
+                  <Check className="h-8 w-8 mx-auto text-emerald-500 mb-3" />
+                  <p className="text-base font-semibold">Tudo pronto por aqui!</p>
+                  <p className="text-xs text-muted-foreground/80 mt-1">Nenhum pedido ativo no momento na fila do KDS.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
 
         {/* ========================================================================= */}
         {/* TAB 1: CONFIGURAÇÃO GERAL                                                 */}
@@ -633,13 +1032,216 @@ export default function AdminPage() {
             </Table>
           </Card>
         </TabsContent>
+
+        {/* ========================================================================= */}
+        {/* TAB 4: TAXAS DE ENTREGA (BAIRROS)                                         */}
+        {/* ========================================================================= */}
+        <TabsContent value="bairros" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-extrabold uppercase">Taxas de Entrega por Bairro</h2>
+              <p className="text-xs text-muted-foreground">Defina os bairros de atendimento e a taxa cobrada para envio de delivery.</p>
+            </div>
+            <Button onClick={handleAddNeighborhood} className="rounded-xl font-bold gap-2 py-5 shadow-sm">
+              <Plus className="h-4 w-4" />
+              Adicionar Bairro
+            </Button>
+          </div>
+
+          <Card className="border-border/40 bg-card rounded-2xl shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead className="text-xs font-black uppercase text-muted-foreground tracking-wider pl-6">Bairro</TableHead>
+                  <TableHead className="text-xs font-black uppercase text-muted-foreground tracking-wider">Taxa de Entrega (R$)</TableHead>
+                  <TableHead className="text-right text-xs font-black uppercase text-muted-foreground tracking-wider pr-6">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {config.deliveryNeighborhoods?.map((item) => (
+                  <TableRow key={item.name} className="hover:bg-muted/10 transition-colors">
+                    <TableCell className="font-extrabold text-sm text-foreground pl-6">
+                      {item.name}
+                    </TableCell>
+                    <TableCell className="font-extrabold text-sm text-primary">
+                      R$ {item.fee.toFixed(2).replace('.', ',')}
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDeleteNeighborhood(item.name)}
+                        className="h-8.5 w-8.5 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+                {(!config.deliveryNeighborhoods || config.deliveryNeighborhoods.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-12 text-muted-foreground">
+                      Nenhum bairro cadastrado. O delivery operará com taxa grátis por padrão.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        {/* ========================================================================= */}
+        {/* TAB 5: CUPONS DE DESCONTO                                                 */}
+        {/* ========================================================================= */}
+        <TabsContent value="cupons" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-extrabold uppercase">Cupons de Desconto</h2>
+              <p className="text-xs text-muted-foreground">Gerencie os cupons promocionais para seus clientes aplicarem no checkout.</p>
+            </div>
+            <Button onClick={handleAddCoupon} className="rounded-xl font-bold gap-2 py-5 shadow-sm">
+              <Plus className="h-4 w-4" />
+              Criar Cupom
+            </Button>
+          </div>
+
+          <Card className="border-border/40 bg-card rounded-2xl shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead className="text-xs font-black uppercase text-muted-foreground tracking-wider pl-6">Código</TableHead>
+                  <TableHead className="text-xs font-black uppercase text-muted-foreground tracking-wider">Tipo</TableHead>
+                  <TableHead className="text-xs font-black uppercase text-muted-foreground tracking-wider">Desconto</TableHead>
+                  <TableHead className="text-xs font-black uppercase text-muted-foreground tracking-wider">Status</TableHead>
+                  <TableHead className="text-right text-xs font-black uppercase text-muted-foreground tracking-wider pr-6">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {config.coupons?.map((item) => (
+                  <TableRow key={item.code} className="hover:bg-muted/10 transition-colors">
+                    <TableCell className="font-extrabold text-sm font-mono text-foreground pl-6 uppercase">
+                      {item.code}
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-muted-foreground uppercase">
+                      {item.type === 'percentage' ? 'Percentual (%)' : 'Fixo (R$)'}
+                    </TableCell>
+                    <TableCell className="font-extrabold text-sm text-primary">
+                      {item.type === 'percentage' ? `${item.value}%` : `R$ ${item.value.toFixed(2).replace('.', ',')}`}
+                    </TableCell>
+                    <TableCell>
+                      <button 
+                        onClick={() => handleToggleCoupon(item.code)}
+                        className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border transition-all cursor-pointer ${
+                          item.isActive 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' 
+                            : 'bg-muted text-muted-foreground border-border/40'
+                        }`}
+                      >
+                        {item.isActive ? 'Ativo' : 'Inativo'}
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDeleteCoupon(item.code)}
+                        className="h-8.5 w-8.5 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+                {(!config.coupons || config.coupons.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                      Nenhum cupom de desconto cadastrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+        </TabsContent>
+
+        {/* ========================================================================= */}
+        {/* TAB 7: INSTAGRAM GALLERY                                                  */}
+        {/* ========================================================================= */}
+        <TabsContent value="instagram">
+          <form onSubmit={handleSaveConfig}>
+            <Card className="border-border/40 bg-card rounded-2xl shadow-sm">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Instagram className="h-5 w-5 text-pink-600" />
+                  <CardTitle className="text-lg font-extrabold uppercase">Feed de Fotos do Instagram</CardTitle>
+                </div>
+                <CardDescription>
+                  Cole os links de até 6 fotos (do Instagram ou qualquer URL de imagem pública) para exibir como uma galeria no rodapé do seu cardápio.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {Array.from({ length: 6 }).map((_, idx) => {
+                    const currentPhotos = config.instagramPhotos || [];
+                    const photoValue = currentPhotos[idx] || '';
+                    return (
+                      <div key={idx} className="p-4 bg-muted/30 rounded-2xl border border-border/20 space-y-3">
+                        <Label className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
+                          Foto {idx + 1}
+                        </Label>
+                        <Input
+                          placeholder="Cole a URL da imagem (ex: https://images.unsplash.com/photo-...)"
+                          value={photoValue}
+                          onChange={(e) => {
+                            const updatedPhotos = [...currentPhotos];
+                            updatedPhotos[idx] = e.target.value;
+                            setConfig({
+                              ...config,
+                              instagramPhotos: updatedPhotos
+                            });
+                          }}
+                          className="rounded-xl border-border/40 bg-background"
+                        />
+                        {photoValue ? (
+                          <div className="h-28 rounded-xl overflow-hidden border border-border/30 relative">
+                            <img
+                              src={photoValue}
+                              alt={`Preview ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as any).src = 'https://images.unsplash.com/photo-1594322436404-5a0526db4d13?auto=format&fit=crop&w=400&q=80';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="h-28 rounded-xl border border-dashed border-border/60 bg-muted/10 flex flex-col items-center justify-center text-[10px] text-muted-foreground font-semibold">
+                            <span>Nenhuma foto inserida</span>
+                            <span className="font-normal text-[9px] mt-0.5">Exibirá o fallback do sistema</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+              <CardFooter className="border-t border-border/40 pt-4 flex justify-end">
+                <Button type="submit" disabled={savingConfig} className="rounded-xl gap-2 font-bold py-5 px-6 shadow-sm">
+                  {savingConfig ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Salvar Galeria
+                </Button>
+              </CardFooter>
+            </Card>
+          </form>
+        </TabsContent>
       </Tabs>
 
       {/* ========================================================================= */}
       {/* PRODUCT DIALOG FOR ADD / EDIT                                             */}
       {/* ========================================================================= */}
       <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="max-w-md rounded-2xl overflow-y-auto max-h-[90vh]">
           <form onSubmit={handleSaveProduct}>
             <DialogHeader>
               <DialogTitle className="text-lg font-black uppercase tracking-tight">
@@ -708,6 +1310,69 @@ export default function AdminPage() {
                     onChange={(e) => setEditingProduct({ ...editingProduct, photo: e.target.value })}
                     className="rounded-xl border-border/40"
                   />
+                </div>
+
+                {/* Flavor Profile parameters for Bartender Virtual Quiz */}
+                <div className="border-t border-border/30 pt-4 mt-2">
+                  <h4 className="font-extrabold text-sm mb-3 text-foreground">Perfil de Sabor (Bartender Virtual)</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="prod-base" className="text-xs font-bold">Base Alcoólica</Label>
+                      <select
+                        id="prod-base"
+                        value={editingProduct.alcoholBase || 'sem-alcool'}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, alcoholBase: e.target.value })}
+                        className="w-full h-10 px-3 rounded-xl border border-border/45 bg-background text-sm font-semibold focus:outline-none"
+                      >
+                        <option value="gin">Gin</option>
+                        <option value="vodka">Vodka</option>
+                        <option value="rum">Rum</option>
+                        <option value="whisky">Whisky</option>
+                        <option value="cachaça">Cachaça</option>
+                        <option value="sem-alcool">Sem Álcool</option>
+                        <option value="outro">Outro/Outros</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="prod-sweetness" className="text-xs font-bold">Doçura (1 a 5)</Label>
+                      <input 
+                        type="number"
+                        min="1"
+                        max="5"
+                        id="prod-sweetness"
+                        value={editingProduct.sweetness !== undefined ? editingProduct.sweetness : 3}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, sweetness: parseInt(e.target.value) || 3 })}
+                        className="w-full h-10 px-3 rounded-xl border border-border/45 bg-background text-sm font-semibold focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="prod-strength" className="text-xs font-bold">Força Alcoólica (1 a 5)</Label>
+                      <input 
+                        type="number"
+                        min="1"
+                        max="5"
+                        id="prod-strength"
+                        value={editingProduct.alcoholStrength !== undefined ? editingProduct.alcoholStrength : 3}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, alcoholStrength: parseInt(e.target.value) || 3 })}
+                        className="w-full h-10 px-3 rounded-xl border border-border/45 bg-background text-sm font-semibold focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="prod-citric" className="text-xs font-bold">Cítrico (1 a 5)</Label>
+                      <input 
+                        type="number"
+                        min="1"
+                        max="5"
+                        id="prod-citric"
+                        value={editingProduct.citric !== undefined ? editingProduct.citric : 3}
+                        onChange={(e) => setEditingProduct({ ...editingProduct, citric: parseInt(e.target.value) || 3 })}
+                        className="w-full h-10 px-3 rounded-xl border border-border/45 bg-background text-sm font-semibold focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-y border-border/30">

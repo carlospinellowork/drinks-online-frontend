@@ -13,6 +13,10 @@ export type Product = {
   category: string;
   photo?: string;
   price: string;
+  sweetness?: number;         // 1-5 for Bartender quiz
+  alcoholStrength?: number;   // 1-5 for Bartender quiz
+  citric?: number;            // 1-5 for Bartender quiz
+  alcoholBase?: string;       // gin, vodka, whisky, cachaça, sem-alcool, outro
 }
 
 export type RestaurantConfig = {
@@ -39,4 +43,47 @@ export type RestaurantConfig = {
     id: string;
     name: string;
   }[];
+  deliveryNeighborhoods?: {
+    name: string;
+    fee: number;
+  }[];
+  coupons?: {
+    code: string;
+    type: 'percentage' | 'fixed';
+    value: number;
+    isActive: boolean;
+  }[];
+  instagramPhotos?: string[];
 }
+
+export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+
+export type Order = {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  orderType: 'delivery' | 'table' | 'takeaway';
+  tableNumber?: string;
+  address?: {
+    street: string;
+    number: string;
+    neighborhood: string;
+    complement?: string;
+  };
+  deliveryFee: number;
+  items: {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    photo?: string;
+  }[];
+  paymentMethod: string;
+  couponCode?: string;
+  discountValue: number;
+  subtotal: number;
+  total: number;
+  status: OrderStatus;
+  createdAt: string;
+}
+

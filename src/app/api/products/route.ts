@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getProducts, saveProducts } from '@/lib/db';
+import { getProducts, createProduct, updateProduct, deleteProduct } from '@/lib/db';
 import { Product } from '@/types';
 
 // Helper to generate safe IDs
@@ -46,7 +46,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes (nome, preço ou categoria).' }, { status: 400 });
     }
 
-    const products = await getProducts();
     const id = newProduct.id || `${slugify(newProduct.name)}-${Date.now()}`;
 
     const createdProduct: Product = {
@@ -56,10 +55,9 @@ export async function POST(request: Request) {
       isActive: newProduct.isActive !== undefined ? newProduct.isActive : true
     };
 
-    products.push(createdProduct);
-    await saveProducts(products);
+    const saved = await createProduct(createdProduct);
 
-    return NextResponse.json({ success: true, product: createdProduct });
+    return NextResponse.json({ success: true, product: saved });
   } catch (error) {
     console.error('Failed to create product:', error);
     return NextResponse.json({ error: 'Erro interno ao adicionar produto.' }, { status: 500 });
@@ -74,21 +72,9 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes.' }, { status: 400 });
     }
 
-    const products = await getProducts();
-    const index = products.findIndex(p => p.id === updatedProduct.id);
+    const saved = await updateProduct(updatedProduct);
 
-    if (index === -1) {
-      return NextResponse.json({ error: 'Produto não encontrado.' }, { status: 404 });
-    }
-
-    products[index] = {
-      ...updatedProduct,
-      description: updatedProduct.description || null
-    };
-    
-    await saveProducts(products);
-
-    return NextResponse.json({ success: true, product: products[index] });
+    return NextResponse.json({ success: true, product: saved });
   } catch (error) {
     console.error('Failed to update product:', error);
     return NextResponse.json({ error: 'Erro interno ao atualizar produto.' }, { status: 500 });
@@ -104,15 +90,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID do produto é obrigatório.' }, { status: 400 });
     }
 
-    const products = await getProducts();
-    const index = products.findIndex(p => p.id === id);
-
-    if (index === -1) {
-      return NextResponse.json({ error: 'Produto não encontrado.' }, { status: 404 });
-    }
-
-    products.splice(index, 1);
-    await saveProducts(products);
+    await deleteProduct(id);
 
     return NextResponse.json({ success: true, message: 'Produto excluído com sucesso.' });
   } catch (error) {

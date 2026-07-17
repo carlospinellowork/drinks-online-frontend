@@ -967,9 +967,12 @@ export default function RestaurantMenu({ initialConfig, initialProducts }: Resta
               </div>
 
               <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-                <DialogTrigger render={<Button className="w-full rounded-xl py-6 font-bold shadow-md shadow-primary/10" />}>
+                <Button 
+                  onClick={() => setIsCheckoutOpen(true)}
+                  className="w-full rounded-xl py-6 font-bold shadow-md shadow-primary/10"
+                >
                   Continuar para Pagamento
-                </DialogTrigger>
+                </Button>
                 <DialogContent className="max-w-[95vw] sm:max-w-2xl rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
                   <DialogHeader>
                     <DialogTitle className="text-xl font-black tracking-tight uppercase">Finalizar Pedido</DialogTitle>
@@ -1210,11 +1213,10 @@ export default function RestaurantMenu({ initialConfig, initialProducts }: Resta
       {cart.length > 0 && (
         <div className="lg:hidden fixed bottom-6 left-0 right-0 px-4 z-30">
           <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
-            <SheetTrigger render={
-              <Button
-                className="w-full rounded-full py-6 font-bold flex items-center justify-between shadow-xl shadow-primary/20 bg-primary text-white text-base animate-bounce-short"
-              />
-            }>
+            <Button
+              onClick={() => setIsCartOpen(true)}
+              className="w-full rounded-full py-6 font-bold flex items-center justify-between shadow-xl shadow-primary/20 bg-primary text-white text-base animate-bounce-short"
+            >
               <span className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
                 <span>Ver Sacola</span>
@@ -1223,7 +1225,7 @@ export default function RestaurantMenu({ initialConfig, initialProducts }: Resta
                 </span>
               </span>
               <span>R$ {finalTotal.toFixed(2).replace('.', ',')}</span>
-            </SheetTrigger>
+            </Button>
             <SheetContent side="bottom" className="rounded-t-3xl max-h-[85vh] p-6">
               <SheetHeader>
                 <SheetTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
@@ -1289,10 +1291,13 @@ export default function RestaurantMenu({ initialConfig, initialProducts }: Resta
 
                 <div className="grid grid-cols-2 gap-2 py-1">
                   <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-                    <DialogTrigger render={<Button className="col-span-2 rounded-xl py-5 font-bold shadow-md shadow-primary/10" />}>
+                    <Button 
+                      onClick={() => setIsCheckoutOpen(true)}
+                      className="col-span-2 rounded-xl py-5 font-bold shadow-md shadow-primary/10"
+                    >
                       Ir para o Pagamento
-                    </DialogTrigger>
-                    <DialogContent className="max-w-xs sm:max-w-md rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
+                    </Button>
+                    <DialogContent className="max-w-[95vw] sm:max-w-2xl rounded-3xl p-6 overflow-y-auto max-h-[90vh]">
                       <DialogHeader>
                         <DialogTitle className="text-lg font-black tracking-tight uppercase">Finalizar Pedido</DialogTitle>
                         <DialogDescription className="text-xs">Insira os dados do envio e forma de pagamento.</DialogDescription>
